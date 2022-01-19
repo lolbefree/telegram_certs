@@ -12,7 +12,7 @@ from telegram.ext import Updater
 from telegram.ext import CallbackContext
 from telegram.ext import MessageHandler
 from telegram.ext import Filters
-from config import token
+# from config import token
 import sql_querys
 from PIL import Image, ImageDraw, ImageFont
 import telegram
@@ -30,7 +30,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-bot = telegram.Bot(token=token)
+bot = telegram.Bot(token=not_for_git.token)
 
 
 class BotSpares:
@@ -41,7 +41,7 @@ class BotSpares:
         self.database = not_for_git.db_name
         self.username = not_for_git.db_user
         self.password = not_for_git.db_pw
-        self.driver = '{SQL Server}'  # Driver you need to connect to the database
+        self.driver = '{ODBC Driver 17 for SQL Server}'  # Driver you need to connect to the database '{SQL Server}'  #
         self.numpad_mod = ""
         self.cnn = pyodbc.connect(
             'DRIVER=' + self.driver + ';PORT=port;SERVER=' + self.server + ';PORT=1443;DATABASE=' + self.database +
@@ -130,21 +130,21 @@ class BotSpares:
 
     def crate_cert_picture(self, cert_number, update: Update, context: CallbackContext):
         cd = code128.image('{}'.format(cert_number))
-        cd.save("{}\\{}.png".format(os.getcwd(), cert_number))
-        img1 = Image.open(f'{os.getcwd()}\\cert.jpg')  # main image
-        new_barcode = Image.open("{}\\{}.png".format(os.getcwd(), cert_number))
+        cd.save("{}//{}.png".format(os.getcwd(), cert_number))
+        img1 = Image.open(f'{os.getcwd()}//cert.jpg')  # main image
+        new_barcode = Image.open("{}//{}.png".format(os.getcwd(), cert_number))
 
         img1.paste(new_barcode, (50, 950))  # paste barcode to main image
-        img1.save(f"{os.getcwd()}\\img_with_barcode.png")
+        img1.save(f"{os.getcwd()}//img_with_barcode.png")
         chat_id = self.get_chat_id(update, context)
         bot.send_photo(chat_id, open("img_with_barcode.png", 'rb'), reply_markup=self.add_keybord())
-        os.remove(f"{os.getcwd()}\\img_with_barcode.png")
-        os.remove(f"{os.getcwd()}\\{cert_number}.png")
+        os.remove(f"{os.getcwd()}//img_with_barcode.png")
+        os.remove(f"{os.getcwd()}//{cert_number}.png")
 
-    def contact_callback(self, update: Update, context: CallbackContext):
+    def contact_callback(self, update, context):
         contact = update.effective_message.contact
         self.phone = contact.phone_number[3:]
-        print(f"0{self.phone} запросив {self.check_status}")
+        print(f"0{self.phone} get {self.check_status}")
         if len(list(self.cursor.execute(sql_querys.balance(self.phone)))) == 0:
             message1 = f"Cертифікату за номером 0{self.phone} -  не знайдено"
             update.message.reply_text(
@@ -195,11 +195,11 @@ class BotSpares:
 
 def main():
     updater = Updater(use_context=True,
-                      token=token)
+                      token=not_for_git.token)
     m = BotSpares()
     updater.dispatcher.add_handler(MessageHandler(filters=Filters.text, callback=m.message_handler))
     updater.dispatcher.add_error_handler(MessageHandler(filters=Filters.all, callback=m.error))
-    updater.dispatcher.add_handler(MessageHandler(Filters.contact, m.contact_callback, ))
+    updater.dispatcher.add_handler(MessageHandler(filters=Filters.contact, callback=m.contact_callback))
     updater.start_polling()
     updater.idle()
 
